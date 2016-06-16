@@ -12,9 +12,15 @@ def pack_dict(d):
     """ 将传入的字典转为json字符串，然后在转为utf-8编码的bytes，并在末尾添加一个b'\r'作结束符"""
     s = json.dumps(d)
     bs = s.encode()
-    bs += b'\r'
+    bs += b'\r' # 末尾添加b'\r'表示结束符
 
     return bs
+
+def unpack_bytes(bs):
+    """ 将传入的bytes对象转为json字符串，然后转为dict对象"""
+    bs = bs.rstrip(b'\r')  # 去掉末尾的b'r'
+    s = bs.decode()  # 转为字符串
+    d = json.loads(s)  # 转为dict对象
 
 def epoll_loop(epoller, fd_to_socket, fd_to_times):
     """ 在epoller上轮询"""
