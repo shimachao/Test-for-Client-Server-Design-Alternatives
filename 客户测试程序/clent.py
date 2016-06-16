@@ -49,16 +49,36 @@ def epoll_loop(epoller, fd_to_socket, fd_to_times):
             # 如果是可以发送消息
             elif event == select.EPOLLOUT and fd_state[fd] == 2:
                 count = fd_to_socket.send(msg[fd])
-                msg[fd] = msg[fd][count:]
+                msg[fd] = msg[fd][count:]  # 去掉已发送的部分
 
                 #如果数据已经发送完毕，则进入下一状态
                 if len(msg[fd]) == 0:
-                    fd_state[fd] = 3 # 进入recving
-                    epoller.modify(fd, select.EPOLLIN) # 重新注册为关心可读事件
+                    fd_state[fd] = 3  # 进入recving
+                    epoller.modify(fd, select.EPOLLIN)  # 重新注册为关心可读事件
 
             # 如果是需要接收信息
             elif event == select.EPOLLIN and fd_state[fd] == 3:
-                # TODO:接收信息
+                # 接收信息
+                try:
+                    bs = fd_to_socket[fd].recv(1024)
+                    if len(bs) >= 0:
+                        msg[fd] += bs
+                    # 如果接收结束
+                    if len(bs) > 0 and bs[-1] == ord('\r'):
+                        # 解包并处理接所有收到的数据
+                        now = round(time.time() * 1000)   # 记录当前时间，单位为毫秒
+                        epoller.unregister(fd)  # 该socket不再需要监听
+                        fd_to_socket[fd].close()  # 关闭连接
+
+                        # 处理接收到的数据
+                        d = unpack_bytes(msg[fd])
+                        d['request_completed_time'] = now
+                        # todo:数据处理
+
+                except socket.error as e:
+                    # 如果是暂时没数据可读
+                    if e.errno == socket.errno.EINTR or e.errno == socket.errno.EWOULDBLOCK:
+                        break
 
 
 def mult_connect_to_server(ip, port, conn_num):
