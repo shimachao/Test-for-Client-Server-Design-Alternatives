@@ -7,6 +7,23 @@ from multiprocessing import Process
 import select
 import time
 
+def epoll_loop(epoller, fd_to_socket, fd_connect_flags, fd_to_times):
+    """ 在epoller上轮询"""
+    while True:
+        events = epoller.poll()
+        for fd, envent in events:
+            # 如果是连接完成
+            if event == select.EPOLLIN and fd_connect_flags[fd] == False:
+                fd_connect_flags[fd] == True
+                # 记录连接完成的时间
+                fd_to_times[fd]['connect_completed_time'] = round(time.time() * 1000)
+                # todo:把信息转为json字符串发送给服务器
+
+            # 如果是需要读取信息
+            elif event == select.EPOLLIN and fd_connect_flags[fd] == True:
+                # TODO:读取信息
+
+
 def mult_connect_to_server(ip, port, conn_num):
     """ 对服务器发起异步多连接"""
     # 创建conn_num个socket
@@ -27,16 +44,12 @@ def mult_connect_to_server(ip, port, conn_num):
 
     # 记录文件描述符号到socket对象的映射
     fd_to_socket = {sock.fileno:sock for sock in sockets}
+    
+    #记录fd对应的socket是否已完成连接
+    fd_connect_flags = {sock.fileno:False for sock in sockets}
 
     # 轮询监听
-    while True:
-        events = epoller.poll()
-        for fd, envent in events:
-            # 如果是连接已完成
-            if event == select.EPOLLIN:
-                # 记录连接完成的时间
-                fd_to_times[fd]['connect_completed_time'] = round(time.time() * 1000)
-                # 把信息转为json字符串发送给服务器
+    epoll_loop(epoller, fd_to_socket, fd_connect_flags, fd_to_times)
 
 
 def stress_test(server_ip, server_port, conn_num):
