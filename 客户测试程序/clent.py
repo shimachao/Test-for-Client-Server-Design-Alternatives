@@ -41,8 +41,15 @@ def epoll_loop(epoller, fd_to_socket, fd_to_times):
                 fd_state[fd] = 2
 
             # 如果是可以发送消息
-            elif event == select.EPOLLOUT and fd_state[fd] == 2 :
-                
+            elif event == select.EPOLLOUT and fd_state[fd] == 2:
+                count = fd_to_socket.send(msg[fd])
+                msg[fd] = msg[fd][count:]
+
+                #如果数据已经发送完毕，则进入下一状态
+                if len(msg[fd]) == 0:
+                    fd_state[fd] = 3 # 进入recving
+                    epoller.modify(fd, select.EPOLLIN) # 重新注册为关心可读事件
+
             # 如果是需要接收信息
             elif event == select.EPOLLIN and fd_state[fd] == 3:
                 # TODO:接收信息
