@@ -1,11 +1,20 @@
 # encoding:utf-8
 import socket
 import sys
-import josn
+import json
 import multiprocessing
 from multiprocessing import Process
 import select
 import time
+
+
+def pack_dict(d):
+    """ 将传入的字典转为json字符串，然后在转为utf-8编码的bytes，并在末尾添加一个b'\r'作结束符"""
+    s = json.dumps(d)
+    bs = s.encode()
+    bs += b'\r'
+
+    return bs
 
 def epoll_loop(epoller, fd_to_socket, fd_to_times):
     """ 在epoller上轮询"""
@@ -24,8 +33,8 @@ def epoll_loop(epoller, fd_to_socket, fd_to_times):
             if event == select.EPOLLIN and fd_state[fd] == 1:
                 # 记录连接完成的时间
                 fd_to_times[fd]['connect_completed_time'] = round(time.time() * 1000)
-                # todo:把times信息打包发送给服务器
-
+                # 把times信息打包，便于后面发送给服务器
+                msg[d] = pack_dict(fd_to_times[fd])
                 # 将fd重新注册为关心可写事件
                 epoller.modify(fd, select.EPOLLOUT)
                 #状态转为sending
