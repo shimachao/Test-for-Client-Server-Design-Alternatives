@@ -46,8 +46,8 @@ class DB():
 
     def insert(self, connect_time, connected_completed_time,request_completed_time):
         """ 向数据库中插入数据"""
-        sql_str = """INSERT INTO %s(connect_time, connected_completed_time,request_completed_time) VALUES(%d, %d, %d)""" % 
-        (self.table_name, connect_time, connected_completed_time, request_completed_time)
+        sql_str = """INSERT INTO %s(connect_time, connected_completed_time,request_completed_time) \
+        VALUES(%d, %d, %d)""" % (self.table_name, connect_time, connected_completed_time, request_completed_time)
 
     def __del__(self):
         if not self.conn:
