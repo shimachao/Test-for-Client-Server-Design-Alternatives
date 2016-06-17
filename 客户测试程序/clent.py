@@ -130,6 +130,9 @@ def stress_test(server_ip, server_port, conn_num, db_table_name):
     # 创建cpu_count个进程
     jobs = [p = Process(target=mult_connect_to_server, args=(ip, port, conn_num, db_table_name)) for x in range(cpu_count)]
 
+    # 开启所有进程
+    map(lambda  job: job.start(), jobs)
+
     # 等待所有进程结束
     map(lambda job:job.join(), jobs)
 
