@@ -117,6 +117,8 @@ def mult_connect_to_server(ip, port, conn_num, db_table_name):
     # 轮询监听
     epoll_loop(epoller, fd_to_socket, fd_to_times, db=db)
 
+    db.close()
+
 
 def stress_test(server_ip, server_port, conn_num, db_table_name):
     """ 对服务器进行压力测试"""
