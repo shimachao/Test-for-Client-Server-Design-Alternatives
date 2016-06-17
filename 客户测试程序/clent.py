@@ -25,7 +25,7 @@ def unpack_bytes(bs):
 def epoll_loop(epoller, fd_to_socket, fd_to_times):
     """ 在epoller上轮询"""
 
-    # 记录所有socket的状态：1为connneting，2为sending，3为recving
+    # 记录所有socket的状态：1为connneting，2为start_send，3为sending，4为recving
     fd_state = {fd: 1 for fd in fd_to_socket.keys()} # 所有socket的初始状态为1
 
     # 和fd相关的消息，类型为{fd:bytes}，当socket状态为sending时，msg[fd]为发送消息，当socket的状态为recving时，
@@ -39,15 +39,22 @@ def epoll_loop(epoller, fd_to_socket, fd_to_times):
             if event == select.EPOLLIN and fd_state[fd] == 1:
                 # 记录连接完成的时间
                 fd_to_times[fd]['connect_completed_time'] = round(time.time() * 1000)
-                # 把times信息打包，便于后面发送给服务器
-                msg[d] = pack_dict(fd_to_times[fd])
                 # 将fd重新注册为关心可写事件
                 epoller.modify(fd, select.EPOLLOUT)
                 #状态转为sending
                 fd_state[fd] = 2
 
             # 如果是可以发送消息
-            elif event == select.EPOLLOUT and fd_state[fd] == 2:
+            elif event == select.EPOLLOUT and (fd_state[fd] ==  or fd_state[fd] == 3):
+                # 如果是刚开始发送
+                if fd_state[fd] == 2:
+                    # 记录请求发送的时间
+                    fd_to_times[fd]['request_time'] = round(time.time() * 1000)
+                    # 把times信息打包，便于后面发送给服务器
+                    msg[d] = pack_dict(fd_to_times[fd])
+                    # 转入下一状态
+                    fd_state[fd] = 3
+                # 发送数据
                 count = fd_to_socket.send(msg[fd])
                 msg[fd] = msg[fd][count:]  # 去掉已发送的部分
 

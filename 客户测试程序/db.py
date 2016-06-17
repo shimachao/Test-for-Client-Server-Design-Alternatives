@@ -36,20 +36,24 @@ class DB():
         if table_name:
             self.table_name = table_name
 
-        sql_str = """CREATE TABLE %s (
-                    id  SERIAL PRIMARY KEY,
-                    connect_time bigint NOT NULL,
-                    connected_completed_time bigint NOT NULL,
-                    request_completed_time bigint NOT NULL
-                    )""" % self.table_name
+        sql_str = ("CREATE TABLE %s("
+                    "id  SERIAL PRIMARY KEY,"
+                    "connect_time bigint NOT NULL,"
+                    "connected_completed_time bigint NOT NULL,"
+                    "request_time bigint NOT NULL,"
+                    "request_completed_time bigint NOT NULL"
+                    ")" % self.table_name)
+                    
         self.cursor.execute(sql_str)
         self.conn.commit()
 
 
-    def insert(self, connect_time, connected_completed_time,request_completed_time):
+    def insert(self, connect_time, connected_completed_time,request_time, request_completed_time):
         """ 向数据库中插入数据"""
-        sql_str = """INSERT INTO %s(connect_time, connected_completed_time,request_completed_time) \
-        VALUES(%d, %d, %d)""" % (self.table_name, connect_time, connected_completed_time, request_completed_time)
+        sql_str = ("INSERT INTO %s(connect_time, connected_completed_time, request_time, request_completed_time)"
+                " VALUES(%d, %d, %d, %d)") % (self.table_name, connect_time, connected_completed_time, \
+                                            request_time, request_completed_time)
+
         self.cursor.execute(sql_str)
         self.conn.commit()
 
