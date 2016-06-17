@@ -7,7 +7,7 @@ import psycopg2 as pg
 class DB():
     """ 用于管理对数据库的访问"""
 
-    def __init__(self, db_name, table_name):
+    def __init__(self, table_name):
         """ 连接到dbname数据库"""
 
         # 从环境变量中获取用户名、密码、数据库名
@@ -19,7 +19,7 @@ class DB():
         if not passwd:
             print('环境变量中没有设置数据库密码\n')
 
-        db = os.getenv('db_name')
+        db_name = os.getenv('db_name')
         if not db:
             print('环境变量中没有设置要访问的数据库名称\n')
 
@@ -70,7 +70,7 @@ class DB():
 if __name__ == '__main__':
     import time
     table_name = input("输入表名:")
-    db = DB(db_name='test_data_db', table_name=table_name)
+    db = DB(table_name=table_name)
     db.create_table()
     for i in range(3):
         t = round(time.time()*1000)
