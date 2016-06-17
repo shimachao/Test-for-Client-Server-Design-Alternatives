@@ -42,7 +42,7 @@ def server(ip, port):
     listen_socket = socket.socket(family=AF_INET, type=SOCK_STREAM)
     serve_address = (ip, port)
     listen_socket.bind(serve_address)
-    listen_socket.listen(10)
+    listen_socket.listen(1024)
     
     while True:
         # 接受一个连接
