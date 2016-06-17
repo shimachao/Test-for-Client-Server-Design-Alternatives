@@ -30,6 +30,7 @@ class DB():
         self.conn = pg.connect(user=user, password=passwd, database=db, host='localhost', port=5432)
         self.cursor = self.conn.cursor()
     
+
     def create_table(self, table_name=None):
         """ 创建表"""
         if table_name:
@@ -44,12 +45,14 @@ class DB():
         self.cursor.execute(sql_str)
         self.conn.commit()
 
+
     def insert(self, connect_time, connected_completed_time,request_completed_time):
         """ 向数据库中插入数据"""
         sql_str = """INSERT INTO %s(connect_time, connected_completed_time,request_completed_time) \
         VALUES(%d, %d, %d)""" % (self.table_name, connect_time, connected_completed_time, request_completed_time)
         self.cursor.execute(sql_str)
         self.conn.commit()
+
 
     def __del__(self):
         if not self.conn:
