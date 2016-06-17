@@ -30,7 +30,7 @@ class DB():
         self.conn = pg.connect(user=user, password=passwd, database=db, host='localhost', port=5432)
         self.cursor = self.conn.cursor()
     
-    def create_table(table_name=None):
+    def create_table(self, table_name=None):
         """ 创建表"""
         if table_name:
             self.table_name = table_name
