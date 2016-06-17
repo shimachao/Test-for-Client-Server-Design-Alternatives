@@ -74,5 +74,5 @@ if __name__ == '__main__':
     db.create_table()
     for i in range(3):
         t = round(time.time()*1000)
-        db.insert(t, t, t)
+        db.insert(t, t, t, t)
 
