@@ -60,7 +60,10 @@ class DB():
 # 测试
 if __name__ == '__main__':
     import time
-    table_name = input("输入表名")
+    table_name = input("输入表名:")
     db = DB(db_name='test_data_db', table_name=table_name)
     db.create_table()
-    t = round(time.time()*1000)
+    for i in range(3):
+        t = round(time.time()*1000)
+        db.insert(t, t, t)
+
