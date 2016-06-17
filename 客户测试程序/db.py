@@ -58,12 +58,19 @@ class DB():
         self.conn.commit()
 
 
-    def __del__(self):
+    def close(self):
+        """ 关闭对数据库的连接"""
         if not self.conn:
             self.conn.commit()
             if not self.cursor:
                 self.cursor.close()
             self.conn.close()
+        self.conn = None
+        self.cursor = None
+
+
+    def __del__(self):
+        self.close()
         
 
 # 测试
