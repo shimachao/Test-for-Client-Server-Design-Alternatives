@@ -6,6 +6,7 @@ import multiprocessing
 from multiprocessing import Process
 import select
 import time
+from db import DB
 
 
 def pack_dict(d):
@@ -19,10 +20,10 @@ def pack_dict(d):
 def unpack_bytes(bs):
     """ 将传入的bytes对象转为json字符串，然后转为dict对象"""
     bs = bs.rstrip(b'\r')  # 去掉末尾的b'r'
-    s = bs.decode()  # 转为字符串
+    s = bs.decode()  # 转为字符串，根据协议，这个字符符合json格式
     d = json.loads(s)  # 转为dict对象
 
-def epoll_loop(epoller, fd_to_socket, fd_to_times):
+def epoll_loop(epoller, fd_to_socket, fd_to_times, db):
     """ 在epoller上轮询"""
 
     # 记录所有socket的状态：1为connneting，2为start_send，3为sending，4为recving
@@ -80,7 +81,8 @@ def epoll_loop(epoller, fd_to_socket, fd_to_times):
                         # 处理接收到的数据
                         d = unpack_bytes(msg[fd])
                         d['request_completed_time'] = now
-                        # todo:数据处理
+                        # 将数据保存到数据库中
+                        db.insert(**d)
 
                 except socket.error as e:
                     # 如果是暂时没数据可读
@@ -88,7 +90,7 @@ def epoll_loop(epoller, fd_to_socket, fd_to_times):
                         break
 
 
-def mult_connect_to_server(ip, port, conn_num):
+def mult_connect_to_server(ip, port, conn_num, db_table_name):
     """ 对服务器发起异步多连接"""
     # 创建conn_num个socket
     sockets = [socket.socket() for x in range(conn_num)]
@@ -109,11 +111,14 @@ def mult_connect_to_server(ip, port, conn_num):
     # 记录文件描述符号到socket对象的映射
     fd_to_socket = {sock.fileno:sock for sock in sockets}
 
+    # 创建数据访问对象
+    db = DB(table_name=db_table_name)
+
     # 轮询监听
-    epoll_loop(epoller, fd_to_socket, fd_to_times)
+    epoll_loop(epoller, fd_to_socket, fd_to_times, db=db)
 
 
-def stress_test(server_ip, server_port, conn_num):
+def stress_test(server_ip, server_port, conn_num, db_table_name):
     """ 对服务器进行压力测试"""
 
     # 创建多个进程，每个进程创建多个到服务器的连接，进程数为当前cpu的核心数
@@ -121,7 +126,7 @@ def stress_test(server_ip, server_port, conn_num):
     conn_num_per_pro = conn_num // cpu_count # 每个进程需要创建的连接数
 
     # 创建cpu_count个进程
-    jobs = [p = Process(target=mult_connect_to_server, args=(ip, port, conn_num)) for x in range(cpu_count)]
+    jobs = [p = Process(target=mult_connect_to_server, args=(ip, port, conn_num, db_table_name)) for x in range(cpu_count)]
 
     # 等待所有进程结束
     map(lambda job:job.join(), jobs)
@@ -131,5 +136,16 @@ if __name__ == '__main__':
     if len(sys.argv < 4):
         print("缺少IP、端口号、连接数参数\n")
         return;
-     else:
-         stress_test(sys.argv[1], sys.argv[2], int(sys.argv[3]))
+     db_table_name = input("输入本次测试创建的数据库表名:")
+     print('本次测试将对(%s, %s)发起%d个连接...\n' % (sys.argv[1], sys.argv[2], int(sys.argv[3])))
+     
+     # 创建放置测试数据需要的数据表
+     db = DB(table_name=db_table_name)
+     db.create_table()
+     del db
+
+     print('本次测试开始...\n')
+     stress_test(server_ip=sys.argv[1], server_port=sys.argv[2], conn_num=int(sys.argv[3]), db_table_name=db_table_name)
+
+     print('本次测试结束\n')
+
