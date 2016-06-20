@@ -2,6 +2,7 @@
 import socket
 import sys
 import json
+import signal
 
 class Closed_error(Exception):
     """ 对方关闭了连接"""
@@ -45,6 +46,18 @@ def server(ip, port):
     listen_socket.bind((ip, port))
     listen_socket.listen(1024)
     
+    conn_socket = None
+    # SIGINT信号的处理函数
+    def sigint_handler(sig_num, addtion):
+        listen_socket.close()
+        if conn_socket:
+            conn_socket.close()
+        print('程序被强制退出...')
+        sys.exit()
+    
+    # 注册对退出信号SIGINT的处理
+    signal.signal(signal.SIGINT, sigint_handler)
+
     while True:
         # 接受一个连接
         conn_socket, addr = listen_socket.accept()
