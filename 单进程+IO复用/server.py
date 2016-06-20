@@ -18,9 +18,9 @@ class SocketIO():
     def add_socket(self, socket_):
         """ 将socket_添加到要处理的集合中"""
         # 如果该socket不存在才添加
-        if scoket_.fileno() not in self.sockets:
+        if socket_.fileno() not in self.sockets:
             self.sockets[socket_.fileno()] = socket_
-            self.msgs[socket_.fileno()] = ''  # 设置初始消息为空
+            self.msgs[socket_.fileno()] = b''  # 设置初始消息为空
             self.epoller.register(socket_.fileno(), select.EPOLLIN)
 
 
@@ -41,7 +41,6 @@ class SocketIO():
             self.epoller.unregister(fd)
             # 从要处理的集合中删除
             self.sockets.pop(fd)
-            self.states.pop(fd)
             self.msgs.pop(fd)
             return
         else:
@@ -49,8 +48,6 @@ class SocketIO():
         
         # 判读对方是否发送完数据
         if msg[-1] == ord('\r'):
-            # 如果对方已经发送完消息，则进入下一状态
-            self.states[fd] = 2
             # 重新关注该fd上的可写事件
             self.epoller.modify(fd, select.EPOLLOUT)
 
@@ -67,7 +64,7 @@ class SocketIO():
         self.msgs[fd] = self.msgs[fd][count:]
 
         # 如果数据发送完毕，就关闭连接，并不再关注该fd对应的socket
-        if len(self.msgs[fd] == 0):
+        if len(self.msgs[fd])== 0:
             self.sockets[fd].close()
             self.epoller.unregister(fd)
             self.sockets.pop(fd)
