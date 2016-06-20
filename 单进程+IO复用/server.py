@@ -101,6 +101,8 @@ def server(ip, port):
     """ 利用IO复用在监听并处理客户连接"""
     # 创建监听套接字
     listen_socket = socket.socket()
+    listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     serve_address = (ip, port)
     listen_socket.bind(serve_address)
     listen_socket.listen(1024)
