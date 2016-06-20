@@ -121,12 +121,12 @@ if __name__ == '__main__':
     db_table_name = input('输入本次测试创建的数据库表名:')
 
     # 创建放置测试数据需要的数据表
-     db = DB(table_name=db_table_name)
-     db.create_table()  # 创建表
-     db.close()
-     del db
+    db = DB(table_name=db_table_name)
+    db.create_table()  # 创建表
+    db.close()
+    del db
 
-     print('本次测试开始...\n')
-     stress_test(addr=(sys.argv[1], int(sys.argv[2])),con_num, db_table_name=db_table_name)
+    print('本次测试开始...\n')
+    stress_test(addr=(sys.argv[1], int(sys.argv[2])),con_num, db_table_name=db_table_name)
 
-     print('本次测试结束\n')
+    print('本次测试结束\n')
