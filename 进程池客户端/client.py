@@ -127,6 +127,6 @@ if __name__ == '__main__':
     del db
 
     print('本次测试开始...\n')
-    stress_test(addr=(sys.argv[1], int(sys.argv[2])),con_num, db_table_name=db_table_name)
+    stress_test(addr=(sys.argv[1], int(sys.argv[2])),conn_num=conn_num, db_table_name=db_table_name)
 
     print('本次测试结束\n')
