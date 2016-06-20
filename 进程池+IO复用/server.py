@@ -1,7 +1,6 @@
 # coding:utf-8
 import os
 import sys
-import josn
 import socket
 import select
 import signal
@@ -77,7 +76,7 @@ class SocketIO():
 def epoll_loop(epoller, listen_socket):
     """ 监听listen_socket 如果收到新的连接就把新的连接也加入监控"""
 
-    SocketIO io_hander(epoller)  # 专门处理io的对象
+    io_hander = SocketIO(epoller)  # 专门处理io的对象
     listen_socket_fd = listen_socket.fileno()
     while  True:
         events = epoller.poll()
@@ -149,7 +148,7 @@ def multi_server(ip, port, process_num):
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         print("缺少IP和端口号参数\n")
-        return;
+        sys.exit()
     
     count = int(input('输入你希望创建的进程数(提示:本机有%d个cpu核):' % cpu_count()))
     print('serving at', sys.argv[1], sys.argv[2])
