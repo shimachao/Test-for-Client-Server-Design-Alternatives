@@ -41,6 +41,7 @@ def server(ip, port):
     
     listen_socket = socket.socket()
     listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     listen_socket.bind((ip, port))
     listen_socket.listen(1024)
     

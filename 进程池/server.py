@@ -86,6 +86,8 @@ def server(ip, port):
     # 创建监听套接字
     listen_socket = socket.socket()
     serve_address = (ip, port)
+    listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     listen_socket.bind(serve_address)
     listen_socket.listen(1024)
 
