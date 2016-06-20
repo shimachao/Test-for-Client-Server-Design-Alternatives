@@ -39,9 +39,8 @@ def complete_send(conn_socket, msg):
 def server(ip, port):
     """ 迭代处理客户端的连接请求"""
     
-    listen_socket = socket.socket(family=AF_INET, type=SOCK_STREAM)
-    serve_address = (ip, port)
-    listen_socket.bind(serve_address)
+    listen_socket = socket.socket()
+    listen_socket.bind((ip, port)))
     listen_socket.listen(1024)
     
     while True:
@@ -60,9 +59,9 @@ def server(ip, port):
 
     
 if __name__ == '__main__':
-    if len(sys.argv < 3):
+    if len(sys.argv) < 3:
         print("缺少IP和端口号参数\n")
         return;
      else:
-         server(sys.argv[1], sys.argv[2])
+         server(sys.argv[1], int(sys.argv[2]))
     
