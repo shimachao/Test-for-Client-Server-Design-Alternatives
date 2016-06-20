@@ -149,10 +149,10 @@ def multi_server(ip, port, process_num):
 
 
 if __name__ == '__main__':
-    if len(sys.argv < 3):
+    if len(sys.argv) < 3:
         print("缺少IP和端口号参数\n")
         return;
     
     count = int(input('输入你希望创建的进程数(提示:本机有%d个cpu核):' % cpu_count()))
     print('serving at', sys.argv[1], sys.argv[2])
-    multi_server(sys.argv[1], sys.argv[2], count)  # 开始服务
+    multi_server(sys.argv[1], int(sys.argv[2]), count)  # 开始服务
