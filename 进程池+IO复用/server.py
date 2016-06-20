@@ -20,10 +20,10 @@ class SocketIO():
     def add_fd(self, socket_):
         """ 将socket_添加到要处理的集合中"""
         # 如果该socket不存在才添加
-        if scoket_.fileno() not in sockets:
+        if scoket_.fileno() not in self.sockets:
             self.sockets[socket_.fileno()] = socket_
             self.msgs[socket_.fileno()] = ''  # 设置初始消息为空
-            self.epoller.register
+            self.epoller.register(socket_.fileno(), select.EPOLLIN)
 
 
     def recv(self, fd):
