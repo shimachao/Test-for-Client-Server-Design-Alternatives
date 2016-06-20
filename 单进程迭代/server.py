@@ -1,7 +1,7 @@
 # coding:utf-8
 import socket
 import sys
-import josn
+import json
 
 class Closed_error(Exception):
     """ 对方关闭了连接"""
