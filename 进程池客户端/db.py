@@ -27,7 +27,7 @@ class DB():
         self.passwd = passwd
         self.db_name = db_name
         self.table_name = table_name
-        self.conn = pg.connect(user=user, password=passwd, database=db, host='localhost', port=5432)
+        self.conn = pg.connect(user=user, password=passwd, database=db_name, host='localhost', port=5432)
         self.cursor = self.conn.cursor()
     
 
