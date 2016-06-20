@@ -44,7 +44,7 @@ def complete_recv(conn_socket):
             # 如果对方关闭了连接
             conn_socket.close()
             # 抛出异常，表示未意料到的关闭
-            raise Closed_error()
+            raise socket.error()
         msg += bs
         if bs[-1] == ord('\r'):
             # 如果对方发送完数据
