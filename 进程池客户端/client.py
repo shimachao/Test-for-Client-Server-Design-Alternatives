@@ -90,7 +90,7 @@ def task(addr, db_table_name):
         db.insert(**d)
         db.close()
     except socket.error as e:
-        print(sock.getsockname,'上连接发生错误，', e)
+        print(sock.getsockname(),'上连接发生错误，', e)
 
 
 

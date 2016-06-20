@@ -15,7 +15,7 @@ class SocketIO():
         self.msgs = {}  # fd到消息的映射
 
 
-    def add_fd(self, socket_):
+    def add_socket(self, socket_):
         """ 将socket_添加到要处理的集合中"""
         # 如果该socket不存在才添加
         if scoket_.fileno() not in self.sockets:
@@ -87,7 +87,7 @@ def epoll_loop(epoller, listen_socket):
                 # 接受新连接
                 conn_socket,addr = listen_socket.accept()
                 # 将新连接加入监听计划
-                io_hander.add(conn_socket)
+                io_hander.add_socket(conn_socket)
 
             # 如果是普通连接上的可读事件
             elif flag == select.EPOLLIN:
