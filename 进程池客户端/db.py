@@ -20,7 +20,7 @@ class DB():
             print('环境变量中没有设置数据库密码\n')
 
         db_name = os.getenv('db_name')
-        if not db:
+        if not db_name:
             print('环境变量中没有设置要访问的数据库名称\n')
 
         self.user = user
