@@ -60,9 +60,9 @@ class DB():
 
     def close(self):
         """ 关闭对数据库的连接"""
-        if not self.conn:
+        if self.conn:
             self.conn.commit()
-            if not self.cursor:
+            if self.cursor:
                 self.cursor.close()
             self.conn.close()
         self.conn = None
