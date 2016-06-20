@@ -24,6 +24,8 @@ def unpack_bytes(bs):
     s = bs.decode()  # 转为字符串，根据协议，这个字符符合json格式
     d = json.loads(s)  # 转为dict对象
 
+    return d
+
 
 class NonblockingIO():
     """ 用来处理非阻塞socket的连接和IO
