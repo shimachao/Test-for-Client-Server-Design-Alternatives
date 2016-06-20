@@ -32,7 +32,7 @@ class SocketIO():
         # 接收消息，并判读对方是否关闭了连接
         msg = self.sockets[fd].recv(1024)
         # 如果对方关闭了连接
-        if len(msg) = 0:
+        if len(msg) == 0:
             print(self.socket.ggetpeername ,'提前关闭了连接')
             # 关闭连接
             self.sockets[fd].close()
@@ -76,7 +76,7 @@ class SocketIO():
 def epoll_loop(epoller, listen_socket_fd):
     """ 监听listen_socket 如果收到新的连接就把新的连接也加入监控"""
 
-    SocketIO io_hander(epoller)  # 专门处理io的对象
+    io_hander = SocketIO(epoller)  # 专门处理io的对象
     while  True:
         events = epoller.poll()
         for fd, flag in events:
@@ -130,7 +130,6 @@ def server(ip, port):
 if __name__ == '__main__':
     if len(sys.argv < 3):
         print("缺少IP和端口号参数\n")
-        return;
-     else:
-         print('serving at', sys.argv[1], sys.argv[2])
-         server(sys.argv[1], sys.argv[2])  # 开始服务
+        sys.exit()
+    print('serving at', sys.argv[1], sys.argv[2])
+    server(sys.argv[1], int(sys.argv[2]))  # 开始服务
