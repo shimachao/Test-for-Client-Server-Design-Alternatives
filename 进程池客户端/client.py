@@ -104,7 +104,7 @@ def stress_test(addr, conn_num, db_table_name):
     print('任务完成...')
     print('本次测试共向服务端发送%', conn_num, '个连接')
     print('耗时', end_time - start_time, 's')
-    print('详细数据已记录到数据库的', db_table_name, '表中')
+    print('详细数据已记录到test_data数据库的', db_table_name, '表中')
 
 
 
