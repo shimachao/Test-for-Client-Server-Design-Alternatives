@@ -66,7 +66,7 @@ def server(ip, port):
     """ 在（ip, prot）上接收客户的连接，并为每一个客户连接派生一个进程"""
 
     # 创建监听套接字
-    listen_socket = socket.socket(family=AF_INET, type=SOCK_STREAM)
+    listen_socket = socket.socket()
     serve_address = (ip, port)
     listen_socket.bind(serve_address)
     listen_socket.listen(1024)

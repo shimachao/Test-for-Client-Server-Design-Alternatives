@@ -84,7 +84,7 @@ def accept_and_handle(listen_socket):
 def server(ip, port):
     """ 预先创建进程池，在（ip, prot）上接收客户的连接"""
     # 创建监听套接字
-    listen_socket = socket.socket(family=AF_INET, type=SOCK_STREAM)
+    listen_socket = socket.socket()
     serve_address = (ip, port)
     listen_socket.bind(serve_address)
     listen_socket.listen(1024)
