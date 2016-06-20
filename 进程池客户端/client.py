@@ -56,37 +56,42 @@ def task(addr, db_table_name):
     """ 向addr发送数据，然后接收数据"""
     # 创建socket
     sock = socket.socket()
+    try:
+        # 发起连接，记录连接发起的时间
+        start_conn_time = round(time.time(*1000))
+        sock.connect(addr)
 
-    # 发起连接，记录连接发起的时间
-    start_conn_time = round(time.time(*1000))
-    sock.connect(addr)
+        # 记录连接成功的时间
+        conn_comp_time = round(time.time(*1000))
 
-    # 记录连接成功的时间
-    conn_comp_time = round(time.time(*1000))
+        # 准备要发送json数据
+        d = {'start_conn_time': start_conn_time,
+            'conn_comp_time': conn_comp_time,}
+        msg = pack_dict(d)
 
-    # 准备要发送json数据
-    d = {'start_conn_time': start_conn_time,
-         'conn_comp_time': conn_comp_time,}
-    msg = pack_dict(d)
+        # 记录发起请求的时间
+        request_time = round(time.time(*1000))
+        # 发送数据
+        complete_send(sock, msg)
+        
+        # 开始接收数据
+        bmsg = complete_recv(sock)
+        # 关闭socket
+        sock.close()
+        # 记录接收完成的时间
+        request_comp_time = round(time.time(*1000))
+        # 解包数据
+        d = unpack_bytes(bmsg)
+        # 将发起请求和请求返回时间插入字典
+        d['request_time'] = request_time
+        d['request_comp_time'] = request_comp_time
+        # 将数据保存到数据库
+        db = DB(db_table_name)
+        db.insert(**d)
+        db.close()
+    except socket.error as:
+        print(sock.getsockname,'上连接发生错误，', e)
 
-    # 记录发起请求的时间
-    request_time = round(time.time(*1000))
-    # 发送数据
-    complete_send(sock, msg)
-    
-    # 开始接收数据
-    bmsg = complete_recv(sock)
-    # 记录接收完成的时间
-    request_comp_time = round(time.time(*1000))
-    # 解包数据
-    d = unpack_bytes(bmsg)
-    # 将发起请求和请求返回时间插入字典
-    d['request_time'] = request_time
-    d['request_comp_time'] = request_comp_time
-    # 将数据保存到数据库
-    db = DB(db_table_name)
-    db.insert(**d)
-    db.close()
 
 
 
