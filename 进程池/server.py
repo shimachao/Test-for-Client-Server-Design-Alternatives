@@ -1,7 +1,6 @@
 # coding:utf-8
 import socket
 import sys
-import josn
 from multiprocessing import Pool, cpu_count,Process
 import signal
 
@@ -75,7 +74,6 @@ def accept_and_handle(listen_socket):
 
     while True:
         # 监听
-        nonlocal conn_socket
         conn_socket, addr = listen_socket.accept()
         # 处理连接
         handle_connect(conn_socket)
@@ -110,6 +108,6 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print("缺少IP和端口号参数\n")
         sys.exit()
-        
+
     print('serving at', sys.argv[1], sys.argv[2])
     server(sys.argv[1], int(sys.argv[2]))  # 开始服务
