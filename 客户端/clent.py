@@ -6,6 +6,7 @@ import multiprocessing
 from multiprocessing import Process
 import select
 import time
+import errno
 from db import DB
 
 
@@ -23,74 +24,144 @@ def unpack_bytes(bs):
     s = bs.decode()  # 转为字符串，根据协议，这个字符符合json格式
     d = json.loads(s)  # 转为dict对象
 
+
+class NonblockingIO():
+    """ 用来处理非阻塞socket的连接和IO
+    每个socket有四种状态：
+        0：未完成connect
+        1：刚开始发送数据
+        2：还有数据需要发送
+        3：接收数据"""
+
+    def __init__(self, epoller, db):
+        self.epoller = epoller
+        self.sockets = {}  # fd到socket的映射
+        self.msgs = {}  # fd到要发送或接收消息的映射
+        self.states = {}  # 每个fd的状态，未完成connect或完成connect
+        self.times = {}  # fd到时间信息的映射
+
+    def add_fd(self, socket_, state = 0):
+        """ 将socket_到要处理的集合中
+        state：表示添加时socket_的状态，
+            0表示未完成connect
+            1表示完成connect
+        """
+        fd = socket_.fileno()
+        # 如果该socket已添加过，就直接返回，避免重复添加
+        if fd in self.sockets:
+            return
+
+        self.sockets[fd] = socket_
+        self.msgs[fd] = ''
+        self.states[fd] = state
+        # 如果该socket未完成connect
+        if state == 0:
+            # 注册EPOLLIN EPOLLOUT EPOLLERR，因为nonblocking的未完成connect的socket这三个事件都能收到
+            self.epoller.register(fd, select.EPOLLIN | select.EPOLLOUT | select.EPOLLERR)
+        # 如果该socket已完成connect
+        elif state == 1:
+            # 只关心EPOLLOUT，因为我们需要在刚完成connect的socket上发送消息
+            self.epoller.register(fd, select.EPOLLOUT)
+
+    def send(self, fd):
+        """ 检测该fd对应的socket是否完成connect，如果完成就在fd对应的socket上发送数据"""
+        # 如果该fd的状态为未完成conncet
+        if self.states[fd] == 0:
+            self.__handle_unconnect(fd)
+            return
+        
+        # 如果该fd的状态为刚开始发送数据
+        if self.states[fd] == 1:
+            self.times['request_'] = round(time.time() * 1000)
+            # 将时间信息打包，便于发送
+            self.msgs[fd] = pack_dict(self.times[fd])
+            # 进入下一状态
+            self.states[fd] = 2
+        
+        # 发送数据
+        count = self.sockets[fd].send(self.msgs[fd])
+        # 去掉已发送的部分
+        self.msgs[fd] = self.msgs[fd][count:]
+
+        # 如果数据已发送完
+        if len(self.msgs[fd]) == 0:
+            # 清空对应的msg
+            self.msgs[fd] = ''
+            # 进入下一阶段
+            self.states[fd] = 3
+            # 重新注册只关心EPOLLIN事件
+            self.epoller.modify(fd, select.EPOLLIN)
+
+    
+    def recv(self, fd):
+        """ 检测fd对应的socket是否完成connect，如果已完成就发送数据"""
+        # 如果该fd的状态为未完成conncet
+        if self.states[fd] == 0:
+            self.__handle_unconnect(fd)
+            return
+        
+        # 如果该fd的状态为接收数据
+        if self.states[fd] = 3:
+            msg = self.sockets[fd].recv(1024)
+            # 如果接收到了数据
+            if len(msg) > 0:
+                self.msgs[fd] += msg
+            # 如果数据已接收完毕
+            if len(msg) == 0 or msg[-1] == ord('\r'):
+                # 记录时间
+                self.times[fd]['request_completed_time'] = round(1000*time.time())
+                # 解包收到的数据
+                d = unpack_bytes(self.msgs[fd])
+                # 关闭连接
+                self.sockets[fd].close()
+                # 重轮询监听中移出
+                self.epoller.unregister(fd)
+                # 移除
+                self.sockets.pop(fd)
+                self.states.pop(fd)
+                self.times.pop(fd)
+                self.msgs.pop(fd)
+                # 将数据保存到数据库中
+                db.insert(**d)
+
+
+    def __handle_unconnect(self, fd):
+        """ 处理未完成connect的socket"""
+        # 检测connect的状态
+        r = self.__if_connected(fd)
+        # 如果出错
+        if r < 0:
+            # 移出该fd对应的信息
+            self.sockets[fd].close()
+            self.epoller.unregister(fd)
+            self.times.pop(fd)
+            self.msgs.pop(fd)
+            self.states.pop(fd)
+        # 如果完成了
+        elif r == 1:
+            # 进入下个状态
+            self.states[fd] = 1
+            # 重新注册只关心EPOLLOUT事件
+            self.epoller.register(fd, select.EPOLLOUT)
+
+
+    def __if_connected(self,fd):
+        """ 判断fd对应的socket的connect状态
+        返回值：-1、0、1
+        -1表示出错，0表示未完成，1表示完成"""
+        return 0
+
+
+
 def epoll_loop(epoller, fd_to_socket, fd_to_times, db):
     """ 在epoller上轮询"""
-
-    # 记录所有socket的状态：1为connneting，2为start_send，3为sending，4为recving
-    fd_state = {fd: 1 for fd in fd_to_socket.keys()} # 所有socket的初始状态为1
-
-    # 和fd相关的消息，类型为{fd:bytes}，当socket状态为sending时，msg[fd]为发送消息，当socket的状态为recving时，
-    # msg[fd]为接收消息。
-    msg = {fd: b'' for fd in fd_to_socket.keys()}
 
     while True:
         events = epoller.poll()
         for fd, event in events:
-            # 如果是连接完成
-            if event == select.EPOLLIN and fd_state[fd] == 1:
-                # 记录连接完成的时间
-                fd_to_times[fd]['connect_completed_time'] = round(time.time() * 1000)
-                # 将fd重新注册为关心可写事件
-                epoller.modify(fd, select.EPOLLOUT)
-                #状态转为sending
-                fd_state[fd] = 2
+            
 
-            # 如果是可以发送消息
-            elif event == select.EPOLLOUT and (fd_state[fd] ==  or fd_state[fd] == 3):
-                # 如果是刚开始发送
-                if fd_state[fd] == 2:
-                    # 记录请求发送的时间
-                    fd_to_times[fd]['request_time'] = round(time.time() * 1000)
-                    # 把times信息打包，便于后面发送给服务器
-                    msg[d] = pack_dict(fd_to_times[fd])
-                    # 转入下一状态
-                    fd_state[fd] = 3
-                # 发送数据
-                count = fd_to_socket.send(msg[fd])
-                msg[fd] = msg[fd][count:]  # 去掉已发送的部分
-
-                #如果数据已经发送完毕，则进入下一状态
-                if len(msg[fd]) == 0:
-                    fd_state[fd] = 3  # 进入recving
-                    epoller.modify(fd, select.EPOLLIN)  # 重新注册为关心可读事件
-
-            # 如果是需要接收信息
-            elif event == select.EPOLLIN and fd_state[fd] == 3:
-                # 接收信息
-                try:
-                    bs = fd_to_socket[fd].recv(1024)
-                    if len(bs) >= 0:
-                        msg[fd] += bs
-                    # 如果接收结束
-                    if len(bs) > 0 and bs[-1] == ord('\r'):
-                        # 解包并处理接所有收到的数据
-                        now = round(time.time() * 1000)   # 记录当前时间，单位为毫秒
-                        epoller.unregister(fd)  # 该socket不再需要监听
-                        fd_to_socket[fd].close()  # 关闭连接
-
-                        # 处理接收到的数据
-                        d = unpack_bytes(msg[fd])
-                        d['request_completed_time'] = now
-                        # 将数据保存到数据库中
-                        db.insert(**d)
-
-                except socket.error as e:
-                    # 如果是暂时没数据可读
-                    if e.errno == socket.errno.EINTR or e.errno == socket.errno.EWOULDBLOCK:
-                        break
-
-
-def mult_connect_to_server(ip, port, conn_num, db_table_name):
+def mult_connect_to_server(addr, conn_num, db_table_name):
     """ 对服务器发起异步多连接"""
     # 创建conn_num个socket
     sockets = [socket.socket() for x in range(conn_num)]
@@ -99,28 +170,28 @@ def mult_connect_to_server(ip, port, conn_num, db_table_name):
     map(lambda sock: sock.setblocking(False), sockets)
 
     # 发起连接，并记录每个socket发起连接的时间(单位为毫秒)
-    fd_to_times = {}
+    times = {}
     for _socket in sockets:
-        _socket.connect((ip, port))
-        fd_to_times[_socket.fileno()] = {'connect_time':round(time.time() * 1000)}
+        _socket.connect(addr)
+        times[_socket.fileno()] = {'connect_time':round(time.time() * 1000)}
 
     # 用一个epoll对象来监听它们
     epoller = select.epoll()
     map(lambda  sock: epoller.register(sock, select.EPOLLIN), sockets)
 
     # 记录文件描述符号到socket对象的映射
-    fd_to_socket = {sock.fileno:sock for sock in sockets}
+    sockets = {sock.fileno:sock for sock in sockets}
 
     # 创建数据访问对象
     db = DB(table_name=db_table_name)
 
     # 轮询监听
-    epoll_loop(epoller, fd_to_socket, fd_to_times, db=db)
+    epoll_loop(epoller, sockets, times, db=db)
 
     db.close()
 
 
-def stress_test(server_ip, server_port, conn_num, db_table_name):
+def stress_test(addr, conn_num, db_table_name):
     """ 对服务器进行压力测试"""
 
     # 创建多个进程，每个进程创建多个到服务器的连接，进程数为当前cpu的核心数
@@ -128,7 +199,7 @@ def stress_test(server_ip, server_port, conn_num, db_table_name):
     conn_num_per_pro = conn_num // cpu_count # 每个进程需要创建的连接数
 
     # 创建cpu_count个进程
-    jobs = [p = Process(target=mult_connect_to_server, args=(ip, port, conn_num, db_table_name)) for x in range(cpu_count)]
+    jobs = [p = Process(target=mult_connect_to_server, args=(addr, conn_num, db_table_name)) for x in range(cpu_count)]
 
     # 开启所有进程
     map(lambda  job: job.start(), jobs)
@@ -150,7 +221,7 @@ if __name__ == '__main__':
      del db
 
      print('本次测试开始...\n')
-     stress_test(server_ip=sys.argv[1], server_port=sys.argv[2], conn_num=int(sys.argv[3]), db_table_name=db_table_name)
+     stress_test(addr=(sys.argv[1], sys.argv[2]), conn_num=int(sys.argv[3]), db_table_name=db_table_name)
 
      print('本次测试结束\n')
 
