@@ -107,9 +107,9 @@ def server(ip, port):
 
 
 if __name__ == '__main__':
-    if len(sys.argv < 3):
+    if len(sys.argv) < 3:
         print("缺少IP和端口号参数\n")
         return;
      else:
          print('serving at', sys.argv[1], sys.argv[2])
-         server(sys.argv[1], sys.argv[2])  # 开始服务
+         server(sys.argv[1], int(sys.argv[2]))  # 开始服务
