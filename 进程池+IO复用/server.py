@@ -17,7 +17,7 @@ class SocketIO():
         self.msgs = {}  # fd到消息的映射
 
 
-    def add_fd(self, socket_):
+    def add_socket(self, socket_):
         """ 将socket_添加到要处理的集合中"""
         # 如果该socket不存在才添加
         if scoket_.fileno() not in self.sockets:
@@ -35,7 +35,7 @@ class SocketIO():
         # 接收消息，并判读对方是否关闭了连接
         msg = self.sockets[fd].recv(1024)
         # 如果对方关闭了连接
-        if len(msg) = 0:
+        if len(msg) == 0:
             print(self.socket.ggetpeername ,'提前关闭了连接')
             # 关闭连接
             self.sockets[fd].close()
@@ -43,7 +43,6 @@ class SocketIO():
             self.epoller.unregister(fd)
             # 从要处理的集合中删除
             self.sockets.pop(fd)
-            self.states.pop(fd)
             self.msgs.pop(fd)
             return
         else:
@@ -51,9 +50,7 @@ class SocketIO():
         
         # 判读对方是否发送完数据
         if msg[-1] == ord('\r'):
-            # 如果对方已经发送完消息，则进入下一状态
-            self.states[fd] = 2
-            # 重新关注该fd上的可写事件
+            # 对方已发送完数据，重新关注该fd上的可写事件
             self.epoller.modify(fd, select.EPOLLOUT)
 
 
@@ -77,19 +74,20 @@ class SocketIO():
 
 
 
-def epoll_loop(epoller, listen_socket_fd):
+def epoll_loop(epoller, listen_socket):
     """ 监听listen_socket 如果收到新的连接就把新的连接也加入监控"""
 
     SocketIO io_hander(epoller)  # 专门处理io的对象
+    listen_socket_fd = listen_socket.fileno()
     while  True:
         events = epoller.poll()
         for fd, flag in events:
             # 如果是listen socket上的读事件
             if fd == listen_socket_fd and flag == select.EPOLLIN:
                 # 接受新连接
-                conn_socket,addr = sockets[listen_socket_fd].accept()
+                conn_socket,addr = listen_socket.accept()
                 # 将新连接加入监听计划
-                io_hander.add(conn_socket)
+                io_hander.add_socket(conn_socket)
 
             # 如果是普通连接上的可读事件
             elif flag == select.EPOLLIN:
@@ -131,7 +129,7 @@ def server(ip, port):
     print('进程', os.getpid(), '已启动')
 
     # 开始epoll轮询
-    epoll_loop(epoller, listen_socket.fileno(), sockets)
+    epoll_loop(epoller, listen_socket)
 
 
 def multi_server(ip, port, process_num):
