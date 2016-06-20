@@ -19,9 +19,9 @@ class SocketIO():
     def add_socket(self, socket_):
         """ 将socket_添加到要处理的集合中"""
         # 如果该socket不存在才添加
-        if scoket_.fileno() not in self.sockets:
+        if socket_.fileno() not in self.sockets:
             self.sockets[socket_.fileno()] = socket_
-            self.msgs[socket_.fileno()] = ''  # 设置初始消息为空
+            self.msgs[socket_.fileno()] = b''  # 设置初始消息为空
             self.epoller.register(socket_.fileno(), select.EPOLLIN)
 
 
@@ -65,7 +65,7 @@ class SocketIO():
         self.msgs[fd] = self.msgs[fd][count:]
 
         # 如果数据发送完毕，就关闭连接，并不再关注该fd对应的socket
-        if len(self.msgs[fd] == 0):
+        if len(self.msgs[fd]) == 0:
             self.sockets[fd].close()
             self.epoller.unregister(fd)
             self.sockets.pop(fd)
@@ -137,12 +137,12 @@ def multi_server(ip, port, process_num):
     print('主进程', os.getpid(), '已启动')
 
     # 创建并启动子进程
-    for i in range(1, process_num):
+    for i in range(0, process_num):
         p = Process(target=server, args=(ip, port))
         p.start()
     
     # 主进程也做同样的服务
-    server(ip, port)
+    # server(ip, port)
 
 
 if __name__ == '__main__':
