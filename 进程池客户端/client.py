@@ -99,7 +99,7 @@ def stress_test(addr, process_num, conn_num, db_table_name):
     """ 创建一个进程池，对服务器进行压力测试"""
     start_time = time.time()
     p = Pool(process_num)
-    for i in range(process_num):
+    for i in range(conn_num):
         p.apply_async(func=task,args=(addr, db_table_name))
 
     print('等待任务结束...')
