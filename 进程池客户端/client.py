@@ -106,7 +106,7 @@ def stress_test(addr, process_num, conn_num, db_table_name):
     p.join()
     end_time = time.time()
     print('任务完成...')
-    print('本次测试共向服务端发送', conn_num, '个连接')
+    print('本次测试创建', process_num,'个进程，共向服务端发送', conn_num, '个连接')
     print('耗时', end_time - start_time, 's')
     print('详细数据已记录到test_data数据库的', db_table_name, '表中')
 
@@ -127,6 +127,6 @@ if __name__ == '__main__':
     del db
 
     print('本次测试开始...\n')
-    stress_test(addr=(sys.argv[1], int(sys.argv[2])),process_num=process_num, conn_num=int(conn_num), db_table_name=db_table_name)
+    stress_test(addr=(sys.argv[1], int(sys.argv[2])),process_num=int(process_num), conn_num=int(conn_num), db_table_name=db_table_name)
 
     print('本次测试结束\n')
