@@ -79,14 +79,13 @@ def accept_and_handle(listen_socket):
         handle_connect(conn_socket)
 
 
-def server(ip, port):
-    """ 预先创建进程池，在（ip, prot）上接收客户的连接"""
+def server(addr, process_num):
+    """ 预先创建进程池，在addr上接收客户的连接"""
     # 创建监听套接字
     listen_socket = socket.socket()
-    serve_address = (ip, port)
     listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-    listen_socket.bind(serve_address)
+    listen_socket.bind(addr)
     listen_socket.listen(1024)
 
     # 退出信号的处理函数
@@ -99,7 +98,7 @@ def server(ip, port):
     signal.signal(signal.SIGINT, sigint_handler)
     
     # 预先创建cpu_count个进程
-    for i in range(cpu_count()):
+    for i in range(process_num):
         p = Process(target=accept_and_handle, args=(listen_socket,))
         p.start()
 
@@ -108,6 +107,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print("缺少IP和端口号参数\n")
         sys.exit()
-
+    
+    process_num = input('本次测试使用的进程数(提示：本机有 %d 个cpu核):' % cpu_count())
     print('serving at', sys.argv[1], sys.argv[2])
-    server(sys.argv[1], int(sys.argv[2]))  # 开始服务
+    server(addr=(sys.argv[1], int(sys.argv[2])), process_num=int(process_num))  # 开始服务
