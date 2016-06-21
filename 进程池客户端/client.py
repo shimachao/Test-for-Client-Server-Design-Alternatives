@@ -95,11 +95,10 @@ def task(addr, db_table_name):
 
 
 
-def stress_test(addr, conn_num, db_table_name):
+def stress_test(addr, process_num, conn_num, db_table_name):
     """ 创建一个进程池，对服务器进行压力测试"""
     start_time = time.time()
-    p = Pool(cpu_count())
-    for i in range(conn_num):
+    for i in range(process_num):
         p.apply_async(func=task,args=(addr, db_table_name))
 
     print('等待任务结束...')
@@ -117,6 +116,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print('少了ip和端口号参数，请重新运行程序并添加参数')
         sys.exit()
+    process_num = input('本次测试使用的进程数(提示：本机有 %d 个cpu核):' % cpu_count())
     conn_num = input('本次测试发起的连接数：')
     db_table_name = input('输入本次测试创建的数据库表名:')
 
@@ -127,6 +127,6 @@ if __name__ == '__main__':
     del db
 
     print('本次测试开始...\n')
-    stress_test(addr=(sys.argv[1], int(sys.argv[2])),conn_num=int(conn_num), db_table_name=db_table_name)
+    stress_test(addr=(sys.argv[1], int(sys.argv[2])),process_num=process_num, conn_num=int(conn_num), db_table_name=db_table_name)
 
     print('本次测试结束\n')
